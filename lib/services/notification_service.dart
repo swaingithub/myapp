@@ -1,5 +1,4 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'database_service.dart';
 
@@ -11,8 +10,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
   final DatabaseService _databaseService = DatabaseService();
 
   Future<void> init() async {
@@ -30,20 +27,10 @@ class NotificationService {
       return;
     }
 
-    // 2. Initialize Local Notifications (for foreground display)
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    // Note: You might need to add an app icon named 'ic_launcher' or similar in android/app/src/main/res/drawable
-
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-    // 3. Setup Background Handler
+    // 2. Setup Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 4. Setup Foreground Handler
+    // 3. Setup Foreground Handler
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
@@ -51,7 +38,8 @@ class NotificationService {
       if (message.notification != null) {
         debugPrint(
             'Message also contained a notification: ${message.notification}');
-        _showLocalNotification(message);
+        // Note: Without flutter_local_notifications, foreground notifications
+        // will be handled by the system on Android 8.0+ automatically
       }
     });
   }
@@ -67,24 +55,5 @@ class NotificationService {
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
       _databaseService.saveUserToken(userId, newToken);
     });
-  }
-
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'high_importance_channel', // id
-      'High Importance Notifications', // title
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    await _flutterLocalNotificationsPlugin.show(
-      message.hashCode,
-      message.notification?.title,
-      message.notification?.body,
-      platformChannelSpecifics,
-    );
   }
 }
