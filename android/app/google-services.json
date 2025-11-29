@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "400583386990",
+    "project_id": "social-media-app-mvp",
+    "storage_bucket": "social-media-app-mvp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400583386990:android:af45575ba396a8fc2a037f",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9eSLsNAmNdrCJmJevR43XBjl_eM8-EKo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
