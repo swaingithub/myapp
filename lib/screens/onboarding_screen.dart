@@ -24,7 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingContent(
       title: 'Secure & Private',
       description:
-          'Your conversations are end-to-end encrypted. Privacy is our priority.',
+          'Your conversations are private and secure. Privacy is our priority.',
       icon: Icons.security_rounded,
     ),
     OnboardingContent(

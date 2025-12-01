@@ -4,12 +4,10 @@ import 'package:rxdart/rxdart.dart';
 import 'dart:io';
 import '../models/user_model.dart';
 import '../models/message.dart';
-
 import 'encryption_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final EncryptionService _encryptionService = EncryptionService();
 
   Future<void> saveUser(UserModel user) async {
     await _firestore
@@ -85,36 +83,61 @@ class DatabaseService {
         final users = List<String>.from(data['users']);
         final otherUserId = users.firstWhere((id) => id != currentUserId);
 
-        // Fetch other user's details
-        final userDoc =
-            await _firestore.collection('users').doc(otherUserId).get();
-        var otherUser = UserModel.fromMap(userDoc.data()!);
-
-        // Fetch nickname if exists
-        final contactDoc = await _firestore
-            .collection('users')
-            .doc(currentUserId)
-            .collection('contacts')
-            .doc(otherUserId)
-            .get();
-
-        if (contactDoc.exists && contactDoc.data()?['nickname'] != null) {
-          otherUser =
-              otherUser.copyWith(displayName: contactDoc.data()!['nickname']);
-        }
-
-        // Decrypt last message
-        String lastMessage = data['lastMessage'] ?? '';
-        if (lastMessage != '📷 Photo' && lastMessage.isNotEmpty) {
-          lastMessage = _encryptionService.decryptMessage(lastMessage);
-        }
-
-        rooms.add({
+        // Basic room data
+        final roomData = {
           'chatRoomId': doc.id,
-          'lastMessage': lastMessage,
-          'lastMessageTime': data['lastMessageTime'],
-          'user': otherUser,
-        });
+          'lastMessage': EncryptionService.decrypt(data['lastMessage'] ?? ''),
+          'lastMessageTime': data['lastMessageTime'] != null
+              ? (data['lastMessageTime'] is int
+                  ? DateTime.fromMillisecondsSinceEpoch(data['lastMessageTime'])
+                  : (data['lastMessageTime'] as dynamic).toDate())
+              : null,
+          'otherUserId': otherUserId,
+          'unreadCount': 0,
+        };
+
+        try {
+          DocumentSnapshot<Map<String, dynamic>> userDoc;
+          try {
+            // 1. Try Cache First
+            userDoc = await _firestore
+                .collection('users')
+                .doc(otherUserId)
+                .get(const GetOptions(source: Source.cache));
+
+            if (!userDoc.exists) {
+              // 2. If not in cache, try Server
+              userDoc =
+                  await _firestore.collection('users').doc(otherUserId).get();
+            }
+          } catch (e) {
+            // Fallback to server if cache fails
+            try {
+              userDoc =
+                  await _firestore.collection('users').doc(otherUserId).get();
+            } catch (e) {
+              // If server also fails (offline), create a dummy doc from cache even if empty/stale
+              // or just fail gracefully
+              userDoc = await _firestore
+                  .collection('users')
+                  .doc(otherUserId)
+                  .get(const GetOptions(source: Source.cache));
+            }
+          }
+
+          if (userDoc.exists) {
+            roomData['user'] = UserModel.fromMap(userDoc.data()!);
+          } else {
+            roomData['user'] =
+                UserModel(uid: otherUserId, displayName: 'User', email: '');
+          }
+        } catch (e) {
+          // Absolute fallback
+          roomData['user'] =
+              UserModel(uid: otherUserId, displayName: 'User', email: '');
+        }
+
+        rooms.add(roomData);
       }
       return rooms;
     });
@@ -129,19 +152,30 @@ class DatabaseService {
   }
 
   Future<void> sendMessage(String chatRoomId, Message message) async {
-    // Encrypt message content
-    final encryptedContent = _encryptionService.encryptMessage(message.content);
-    final encryptedMessage = message.copyWith(content: encryptedContent);
+    // Encrypt message content if it's text
+    String contentToSend = message.content;
+    if (message.type == 'text') {
+      contentToSend = EncryptionService.encrypt(message.content);
+    }
+
+    final messageMap = message.toMap();
+    messageMap['content'] = contentToSend;
 
     await _firestore
         .collection('chat_rooms')
         .doc(chatRoomId)
         .collection('messages')
-        .add(encryptedMessage.toMap());
+        .add(messageMap);
 
-    String lastMsg = encryptedContent;
+    String lastMsg = contentToSend;
     if (message.type == 'view_once') {
       lastMsg = '📷 Photo';
+    } else if (message.type == 'image') {
+      lastMsg = '📷 Photo';
+    } else if (message.type == 'document') {
+      lastMsg = '📄 Document';
+    } else if (message.type == 'location') {
+      lastMsg = '📍 Location';
     }
 
     await _firestore.collection('chat_rooms').doc(chatRoomId).set({
@@ -161,13 +195,13 @@ class DatabaseService {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
+        // Decrypt content
+        if (data['type'] == 'text' && data['content'] != null) {
+          data['content'] = EncryptionService.decrypt(data['content']);
+        }
         final message = Message.fromMap(data, id: doc.id);
 
-        // Decrypt content
-        final decryptedContent =
-            _encryptionService.decryptMessage(message.content);
         return message.copyWith(
-          content: decryptedContent,
           isSynced: !doc.metadata.hasPendingWrites,
         );
       }).toList();
@@ -435,5 +469,41 @@ class DatabaseService {
 
     await ref.putFile(imageFile);
     return await ref.getDownloadURL();
+  }
+
+  Future<String> uploadFile(
+      String chatRoomId, File file, String fileName) async {
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('chat_files')
+        .child(chatRoomId)
+        .child('${DateTime.now().millisecondsSinceEpoch}_$fileName');
+
+    await ref.putFile(file);
+    return await ref.getDownloadURL();
+  }
+
+  // --- Presence System ---
+
+  Future<void> updateUserPresence(String uid, bool isOnline) async {
+    await _firestore.collection('users').doc(uid).set({
+      'isOnline': isOnline,
+      'lastSeen': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> updateShowOnlineStatus(String uid, bool show) async {
+    await _firestore.collection('users').doc(uid).set({
+      'showOnlineStatus': show,
+    }, SetOptions(merge: true));
+  }
+
+  Stream<UserModel?> getUserStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (doc.exists) {
+        return UserModel.fromMap(doc.data()!);
+      }
+      return null;
+    });
   }
 }

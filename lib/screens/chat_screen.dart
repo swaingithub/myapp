@@ -7,8 +7,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:screen_protector/screen_protector.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/message.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
@@ -236,7 +240,7 @@ class _ChatScreenState extends State<ChatScreen> {
         receiverId: widget.receiverId,
         content: '📷 Photo',
         timestamp: Timestamp.now(),
-        type: 'image',
+        type: 'image', // Changed from view_once to image for persistent storage
         isViewed: false,
         imageData: base64Image,
       );
@@ -247,6 +251,118 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error sending image: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndSendDocument() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        String fileName = result.files.single.name;
+        int fileSize = result.files.single.size;
+
+        setState(() {
+          _isSendingImage = true;
+        });
+
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final currentUserId = authProvider.user!.uid;
+        final chatRoomId =
+            _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+
+        String fileUrl =
+            await _databaseService.uploadFile(chatRoomId, file, fileName);
+
+        Message message = Message(
+          senderId: currentUserId,
+          receiverId: widget.receiverId,
+          content: fileUrl,
+          timestamp: Timestamp.now(),
+          type: 'document',
+          isViewed: false,
+          fileName: fileName,
+          fileSize: fileSize,
+        );
+
+        await _databaseService.sendMessage(chatRoomId, message);
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending document: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _sendLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Location permissions are denied')));
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'Location permissions are permanently denied, we cannot request permissions.')));
+        }
+        return;
+      }
+
+      setState(() {
+        _isSendingImage = true;
+      });
+
+      Position position = await Geolocator.getCurrentPosition();
+      String locationUrl =
+          'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUserId = authProvider.user!.uid;
+      final chatRoomId =
+          _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+
+      Message message = Message(
+        senderId: currentUserId,
+        receiverId: widget.receiverId,
+        content: locationUrl,
+        timestamp: Timestamp.now(),
+        type: 'location',
+        isViewed: false,
+      );
+
+      await _databaseService.sendMessage(chatRoomId, message);
+      _scrollToBottom();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending location: $e')),
         );
       }
     } finally {
@@ -413,7 +529,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Location'),
               onTap: () {
                 Navigator.pop(context);
-                showUnderConstructionDialog(context, 'Location Sharing');
+                _sendLocation();
               },
             ),
             ListTile(
@@ -430,7 +546,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Document'),
               onTap: () {
                 Navigator.pop(context);
-                showUnderConstructionDialog(context, 'Document Sharing');
+                _pickAndSendDocument();
               },
             ),
           ],
@@ -460,6 +576,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: colorScheme.surface,
+            foregroundColor: colorScheme.onSurface,
+            elevation: 0.5,
+            shadowColor: Colors.black.withOpacity(0.05),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  color: colorScheme.onSurface),
+              onPressed: () => Navigator.pop(context),
+            ),
             titleSpacing: 0,
             title: StreamBuilder<String?>(
               stream: _databaseService.getContactNicknameStream(
@@ -484,31 +609,77 @@ class _ChatScreenState extends State<ChatScreen> {
                   },
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: colorScheme.primary,
-                        child: Text(
-                          displayName.isNotEmpty
-                              ? displayName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 16),
+                      Hero(
+                        tag: 'avatar_${widget.receiverId}',
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: colorScheme.primary.withOpacity(0.1),
+                          child: Text(
+                            displayName.isNotEmpty
+                                ? displayName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               displayName,
-                              style: const TextStyle(fontSize: 16),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Text(
-                              'Online', // Placeholder for online status
                               style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.normal),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface),
+                            ),
+                            StreamBuilder<UserModel?>(
+                              stream: _databaseService
+                                  .getUserStream(authProvider.user!.uid),
+                              builder: (context, currentUserSnapshot) {
+                                final currentUser = currentUserSnapshot.data;
+                                final canSeeOnlineStatus =
+                                    currentUser?.showOnlineStatus ?? true;
+
+                                if (!canSeeOnlineStatus) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return StreamBuilder<UserModel?>(
+                                  stream: _databaseService
+                                      .getUserStream(widget.receiverId),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final user = snapshot.data!;
+                                    if (!user.showOnlineStatus) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    if (user.isOnline) {
+                                      return const Text(
+                                        'Online',
+                                        style: TextStyle(
+                                            color: Colors.green, fontSize: 12),
+                                      );
+                                    }
+                                    if (user.lastSeen != null) {
+                                      return Text(
+                                        'Last seen ${DateFormat('h:mm a').format(user.lastSeen!)}',
+                                        style: TextStyle(
+                                            color: colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                            fontSize: 12),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -523,56 +694,72 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        border: InputBorder.none,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            setState(() {
-                              _isSearching = false;
-                              _searchQuery = '';
-                              _searchController.clear();
-                            });
-                          },
-                        ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceVariant.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        style: TextStyle(color: colorScheme.onSurface),
+                        cursorColor: colorScheme.primary,
+                        decoration: InputDecoration(
+                          hintText: 'Search in chat...',
+                          hintStyle: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.5)),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.close,
+                                color: colorScheme.onSurface.withOpacity(0.6)),
+                            onPressed: () {
+                              setState(() {
+                                _isSearching = false;
+                                _searchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
                     ),
                   ),
                 )
               else ...[
                 IconButton(
-                  icon: Icon(Icons.search_rounded, color: colorScheme.primary),
+                  icon: Icon(Icons.videocam_outlined,
+                      color: colorScheme.onSurface),
+                  onPressed: () {
+                    showUnderConstructionDialog(context, 'Video Call');
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.call_outlined, color: colorScheme.onSurface),
+                  onPressed: () {
+                    showUnderConstructionDialog(context, 'Voice Call');
+                  },
+                ),
+                IconButton(
+                  icon:
+                      Icon(Icons.search_rounded, color: colorScheme.onSurface),
                   onPressed: () {
                     setState(() {
                       _isSearching = true;
                     });
                   },
                 ),
-                IconButton(
-                  icon:
-                      Icon(Icons.videocam_rounded, color: colorScheme.primary),
-                  onPressed: () {
-                    showUnderConstructionDialog(context, 'Video Call');
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.call_rounded, color: colorScheme.primary),
-                  onPressed: () {
-                    showUnderConstructionDialog(context, 'Voice Call');
-                  },
-                ),
                 PopupMenuButton<String>(
-                  icon:
-                      Icon(Icons.more_vert_rounded, color: colorScheme.primary),
+                  icon: Icon(Icons.more_vert_rounded,
+                      color: colorScheme.onSurface),
+                  color: colorScheme.surface,
+                  surfaceTintColor: colorScheme.surface,
                   onSelected: (value) {
                     if (value == 'block') {
                       _toggleBlock(isBlocked, currentUserId);
@@ -1010,6 +1197,12 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               if (message.type == 'view_once')
                 _buildViewOnceContent(context, message, isMe, isDark)
+              else if (message.type == 'image')
+                _buildImageContent(context, message, isMe, isDark)
+              else if (message.type == 'document')
+                _buildDocumentContent(context, message, isMe, isDark)
+              else if (message.type == 'location')
+                _buildLocationContent(context, message, isMe, isDark)
               else
                 Text(
                   message.content,
@@ -1118,6 +1311,164 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? Colors.white.withOpacity(0.7)
                         : colorScheme.onSurface.withOpacity(0.6),
                     fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContent(
+      BuildContext context, Message message, bool isMe, bool isDark) {
+    if (message.imageData == null) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                iconTheme: const IconThemeData(color: Colors.white),
+              ),
+              body: Center(
+                child: InteractiveViewer(
+                  child: Image.memory(
+                    base64Decode(message.imageData!),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(
+          base64Decode(message.imageData!),
+          width: 200,
+          height: 200,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentContent(
+      BuildContext context, Message message, bool isMe, bool isDark) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () async {
+        try {
+          final Uri url = Uri.parse(message.content);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not open document')));
+            }
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error opening document: $e')));
+          }
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isMe
+              ? Colors.white.withOpacity(0.2)
+              : colorScheme.surfaceVariant.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.insert_drive_file_rounded,
+                color: isMe ? Colors.white : colorScheme.onSurface),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.fileName ?? 'Document',
+                    style: TextStyle(
+                      color: isMe ? Colors.white : colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (message.fileSize != null)
+                    Text(
+                      '${(message.fileSize! / 1024).toStringAsFixed(1)} KB',
+                      style: TextStyle(
+                        color: isMe
+                            ? Colors.white.withOpacity(0.7)
+                            : colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 10,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationContent(
+      BuildContext context, Message message, bool isMe, bool isDark) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () async {
+        final Uri url = Uri.parse(message.content);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isMe
+              ? Colors.white.withOpacity(0.2)
+              : colorScheme.surfaceVariant.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.location_on_rounded,
+                color: isMe ? Colors.white : Colors.red),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Current Location',
+                  style: TextStyle(
+                    color: isMe ? Colors.white : colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Tap to view on map',
+                  style: TextStyle(
+                    color: isMe
+                        ? Colors.white.withOpacity(0.7)
+                        : colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 10,
                   ),
                 ),
               ],

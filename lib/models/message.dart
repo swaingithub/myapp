@@ -9,6 +9,8 @@ class Message {
   final String type; // 'text' or 'view_once'
   final bool isViewed;
   final bool isDelivered;
+  final String? fileName;
+  final int? fileSize;
   final String? imageData;
   final bool isSynced;
 
@@ -23,6 +25,8 @@ class Message {
     this.isDelivered = false,
     this.imageData,
     this.isSynced = true,
+    this.fileName,
+    this.fileSize,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +39,8 @@ class Message {
       'isViewed': isViewed,
       'isDelivered': isDelivered,
       'imageData': imageData,
+      'fileName': fileName,
+      'fileSize': fileSize,
     };
   }
 
@@ -49,6 +55,8 @@ class Message {
       isViewed: map['isViewed'] ?? false,
       isDelivered: map['isDelivered'] ?? false,
       imageData: map['imageData'],
+      fileName: map['fileName'],
+      fileSize: map['fileSize'],
     );
   }
 
@@ -63,6 +71,8 @@ class Message {
     bool? isDelivered,
     String? imageData,
     bool? isSynced,
+    String? fileName,
+    int? fileSize,
   }) {
     return Message(
       id: id ?? this.id,
@@ -75,6 +85,8 @@ class Message {
       isDelivered: isDelivered ?? this.isDelivered,
       imageData: imageData ?? this.imageData,
       isSynced: isSynced ?? this.isSynced,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
     );
   }
 }
