@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '400583386990',
     projectId: 'social-media-app-mvp',
     authDomain: 'social-media-app-mvp.firebaseapp.com',
-    storageBucket: 'social-media-app-mvp.firebasestorage.app',
+    storageBucket: 'social-media-app-mvp.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     appId: '1:400583386990:android:af45575ba396a8fc2a037f',
     messagingSenderId: '400583386990',
     projectId: 'social-media-app-mvp',
-    storageBucket: 'social-media-app-mvp.firebasestorage.app',
+    storageBucket: 'social-media-app-mvp.appspot.com',
   );
 }

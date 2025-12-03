@@ -13,7 +13,7 @@ void showUnderConstructionDialog(BuildContext context, String featureName) {
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -28,7 +28,7 @@ void showUnderConstructionDialog(BuildContext context, String featureName) {
                 color: Theme.of(context)
                     .colorScheme
                     .primaryContainer
-                    .withOpacity(0.3),
+                    .withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(

@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
 import '../providers/theme_provider.dart';
+import 'blocked_users_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,14 +15,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late Stream<UserModel?> _userStream;
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService databaseService = DatabaseService();
 
   @override
   void initState() {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.user != null) {
-      _userStream = _databaseService.getUserStream(authProvider.user!.uid);
+      _userStream = databaseService.getUserStream(authProvider.user!.uid);
     } else {
       _userStream = const Stream.empty();
     }
@@ -74,18 +75,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Allow others to see when you are online. If disabled, you also won\'t see others\' status.'),
                 value: userData.showOnlineStatus,
                 onChanged: (bool value) async {
+                  final messenger = ScaffoldMessenger.of(context);
                   try {
-                    await _databaseService.updateShowOnlineStatus(
+                    await databaseService.updateShowOnlineStatus(
                         user.uid, value);
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error updating status: $e')),
-                      );
-                    }
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error updating status: $e')),
+                    );
                   }
                 },
                 secondary: const Icon(Icons.visibility_rounded),
+              ),
+              ListTile(
+                title: const Text('Blocked Users'),
+                leading: const Icon(Icons.block_rounded),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const BlockedUsersScreen()),
+                  );
+                },
               ),
 
               const Divider(),
@@ -111,10 +123,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Text('Log Out', style: TextStyle(color: Colors.red)),
                 onTap: () async {
                   // Handle logout
+                  final navigator = Navigator.of(context);
                   await authProvider.signOut();
-                  if (mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  }
+                  navigator.popUntil((route) => route.isFirst);
                 },
               ),
             ],

@@ -65,20 +65,20 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 70,
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withOpacity(0.8)
-                    : Colors.white.withOpacity(0.8),
+                    ? Colors.black.withValues(alpha: 0.8)
+                    : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ],
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.05),
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               ),
               child: Row(
@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: isSelected
             ? BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               )
             : BoxDecoration(
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
               isSelected ? selectedIcon : icon,
               color: isSelected
                   ? colorScheme.primary
-                  : colorScheme.onSurface.withOpacity(0.5),
+                  : colorScheme.onSurface.withValues(alpha: 0.5),
               size: 24,
             ).animate(target: isSelected ? 1 : 0).scale(
                 begin: const Offset(0.8, 0.8), end: const Offset(1.1, 1.1)),

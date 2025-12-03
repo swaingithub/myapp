@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
 import 'chat_screen.dart';
+import '../widgets/display_image.dart';
 
 class SelectContactScreen extends StatelessWidget {
   const SelectContactScreen({super.key});
@@ -125,7 +126,7 @@ class _UserListItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -136,9 +137,8 @@ class _UserListItem extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             leading: CircleAvatar(
               radius: 20, // Smaller radius
-              backgroundColor: colorScheme.primary.withOpacity(0.1),
-              backgroundImage:
-                  user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+              backgroundImage: getAvatarImage(user.photoUrl),
               child: user.photoUrl == null
                   ? Text(
                       initial,
@@ -252,7 +252,7 @@ class _UserListItem extends StatelessWidget {
             databaseService.sendFriendRequest(currentUserId, user.uid);
           },
           style: TextButton.styleFrom(
-            backgroundColor: colorScheme.primary.withOpacity(0.1),
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
             foregroundColor: colorScheme.primary,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(

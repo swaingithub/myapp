@@ -40,9 +40,15 @@ void main() async {
     debug: true,
   );
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
   // Enable offline persistence
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
@@ -130,7 +136,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         primary: primaryColor,
         secondary: secondaryColor,
         surface: surfaceColor,
-        background: backgroundColor,
         brightness: Brightness.light,
       ),
       scaffoldBackgroundColor: backgroundColor,
@@ -192,7 +197,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         primary: primaryColor,
         secondary: secondaryColor,
         surface: const Color(0xFF1E1E1E),
-        background: const Color(0xFF121212),
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: const Color(0xFF121212),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
@@ -9,6 +10,7 @@ import 'chat_screen.dart';
 import 'select_contact_screen.dart';
 import 'settings_screen.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/display_image.dart';
 
 class ChatsListScreen extends StatefulWidget {
   const ChatsListScreen({super.key});
@@ -21,7 +23,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final BehaviorSubject<String> _searchSubject =
       BehaviorSubject<String>.seeded('');
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService databaseService = DatabaseService();
 
   @override
   void initState() {
@@ -81,8 +83,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.white.withOpacity(0.5),
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -113,7 +115,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       const Color(0xFFDCE8F5), // Soft Blue-Grey
-                      const Color(0xFFF0F2F5).withOpacity(0),
+                      const Color(0xFFF0F2F5).withValues(alpha: 0),
                     ],
                   ),
                 ),
@@ -132,7 +134,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -144,14 +146,14 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search conversations...',
                       hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.5)),
+                          color: colorScheme.onSurface.withValues(alpha: 0.5)),
                       prefixIcon: Icon(Icons.search_rounded,
                           color: colorScheme.primary),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: Icon(Icons.clear_rounded,
                                   color:
-                                      colorScheme.onSurface.withOpacity(0.5)),
+                                      colorScheme.onSurface.withValues(alpha: 0.5)),
                               onPressed: () {
                                 _searchController.clear();
                                 FocusScope.of(context).unfocus();
@@ -177,7 +179,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, -5),
                       ),
@@ -189,7 +191,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       topRight: Radius.circular(30),
                     ),
                     child: StreamBuilder<UserModel?>(
-                      stream: _databaseService.getUserStream(currentUserId),
+                      stream: databaseService.getUserStream(currentUserId),
                       builder: (context, currentUserSnapshot) {
                         final currentUser = currentUserSnapshot.data;
                         final canSeeOnlineStatus =
@@ -205,7 +207,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                               // Show Search Results
                               return FutureBuilder<List<UserModel>>(
                                 future:
-                                    _databaseService.searchUsers(searchQuery),
+                                    databaseService.searchUsers(searchQuery),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
@@ -239,7 +241,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             } else {
                               // Show Active Chat Rooms
                               return StreamBuilder<List<Map<String, dynamic>>>(
-                                stream: _databaseService
+                                stream: databaseService
                                     .getChatRooms(currentUserId),
                                 builder: (context, snapshot) {
                                   if (snapshot.hasError) {
@@ -269,7 +271,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                                         indent: 80,
                                         endIndent: 20,
                                         color: colorScheme.onSurface
-                                            .withOpacity(0.05)),
+                                            .withValues(alpha: 0.05)),
                                     itemBuilder: (context, index) {
                                       final room = rooms[index];
                                       final user = room['user'] as UserModel;
@@ -277,13 +279,16 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                                           room['lastMessage'] as String?;
                                       final chatRoomId =
                                           room['chatRoomId'] as String;
+                                      final lastMessageTime =
+                                          room['lastMessageTime'] as DateTime?;
 
                                       // Mark messages as delivered when they appear in the list
-                                      _databaseService.markMessagesAsDelivered(
+                                      databaseService.markMessagesAsDelivered(
                                           chatRoomId, currentUserId);
 
                                       return _buildUserListItem(context, user,
                                           lastMessage: lastMessage,
+                                          lastMessageTime: lastMessageTime,
                                           index: index,
                                           chatRoomId: chatRoomId,
                                           currentUserId: currentUserId,
@@ -317,7 +322,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: colorScheme.primary.withOpacity(0.4),
+                color: colorScheme.primary.withValues(alpha: 0.4),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -367,7 +372,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
   Future<void> _deleteChat(String chatRoomId) async {
     try {
-      await _databaseService.deleteChatRoom(chatRoomId);
+      await databaseService.deleteChatRoom(chatRoomId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Chat deleted')),
@@ -432,6 +437,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
   Widget _buildUserListItem(BuildContext context, UserModel user,
       {String? lastMessage,
+      DateTime? lastMessageTime,
       required int index,
       String? chatRoomId,
       required String currentUserId,
@@ -440,7 +446,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
     return StreamBuilder<String?>(
       stream:
-          _databaseService.getContactNicknameStream(currentUserId, user.uid),
+          databaseService.getContactNicknameStream(currentUserId, user.uid),
       builder: (context, snapshot) {
         final nickname = snapshot.data;
         final displayName = nickname ??
@@ -458,9 +464,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
-                backgroundImage:
-                    user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                backgroundImage: getAvatarImage(user.photoUrl),
                 child: user.photoUrl == null
                     ? Text(
                         initial,
@@ -504,8 +509,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: lastMessage != null
-                    ? colorScheme.onSurface.withOpacity(0.6)
-                    : colorScheme.onSurface.withOpacity(0.4),
+                    ? colorScheme.onSurface.withValues(alpha: 0.6)
+                    : colorScheme.onSurface.withValues(alpha: 0.4),
                 fontSize: 14,
                 fontWeight:
                     lastMessage != null ? FontWeight.w500 : FontWeight.normal,
@@ -517,9 +522,11 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Now', // Placeholder for time
+                lastMessageTime != null
+                    ? DateFormat('hh:mm a').format(lastMessageTime)
+                    : '',
                 style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                   fontSize: 12,
                 ),
               ),

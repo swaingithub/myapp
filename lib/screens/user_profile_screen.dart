@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/display_image.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -16,7 +17,7 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final TextEditingController _nicknameController = TextEditingController();
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService databaseService = DatabaseService();
   late UserModel _user;
   bool _isEditing = false;
   bool _isLoading = false;
@@ -30,7 +31,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _fetchUserDetails() async {
-    final user = await _databaseService.getUser(widget.user.uid);
+    final user = await databaseService.getUser(widget.user.uid);
     if (user != null && mounted) {
       setState(() {
         _user = user;
@@ -42,7 +43,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.user!.uid;
 
-    _databaseService
+    databaseService
         .getContactNicknameStream(currentUserId, widget.user.uid)
         .listen((nickname) {
       if (mounted) {
@@ -62,7 +63,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.user!.uid;
 
-      await _databaseService.saveContactNickname(
+      await databaseService.saveContactNickname(
         currentUserId,
         widget.user.uid,
         _nicknameController.text.trim(),
@@ -133,10 +134,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 tag: 'profile_${_user.uid}',
                 child: CircleAvatar(
                   radius: 60,
-                  backgroundColor: colorScheme.primary.withOpacity(0.1),
-                  backgroundImage: _user.photoUrl != null
-                      ? NetworkImage(_user.photoUrl!)
-                      : null,
+                  backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                  backgroundImage: getAvatarImage(_user.photoUrl),
                   child: _user.photoUrl == null
                       ? Text(
                           initial,
@@ -225,7 +224,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -236,7 +235,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.1),
+              color: colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: colorScheme.primary),
@@ -250,7 +249,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   title,
                   style: TextStyle(
                     fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.6),
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 4),

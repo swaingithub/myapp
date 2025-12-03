@@ -44,9 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
             await authProvider.signInWithPhoneCredential(credential);
           },
           verificationFailed: (FirebaseAuthException e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Verification Failed: ${e.message}')),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Verification Failed: ${e.message}')),
+              );
+            }
           },
           codeSent: (String verificationId, int? resendToken) {
             setState(() {
@@ -59,9 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     }
   }
@@ -76,9 +80,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         await authProvider.signInWithPhoneCredential(credential);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     }
   }
@@ -92,9 +98,11 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text.trim(),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     }
   }
@@ -108,9 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text.trim(),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     }
   }
@@ -131,8 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.background,
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  Theme.of(context).colorScheme.surface,
                 ],
               ),
             ),
@@ -146,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -174,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           .displayMedium
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       textAlign: TextAlign.center,
                     )
@@ -203,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -418,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 themeProvider.themeMode == ThemeMode.dark
                     ? Icons.light_mode_rounded
                     : Icons.dark_mode_rounded,
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               onPressed: () => themeProvider.toggleTheme(),
             ),

@@ -25,6 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final bool onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
 
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) =>
@@ -59,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: primaryColor.withOpacity(0.1),
+                    color: primaryColor.withValues(alpha: 0.1),
                   ),
                 )
                     .animate(onPlay: (controller) => controller.repeat())
@@ -75,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: primaryColor.withOpacity(0.2),
+                    color: primaryColor.withValues(alpha: 0.2),
                   ),
                 )
                     .animate(
@@ -96,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: primaryColor,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.4),
+                        color: primaryColor.withValues(alpha: 0.4),
                         blurRadius: 30,
                         offset: const Offset(0, 15),
                       ),

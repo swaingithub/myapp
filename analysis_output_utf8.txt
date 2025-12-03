@@ -1,0 +1,12 @@
+﻿Analyzing Sanchar...                                            
+
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\main.dart:133:9 - deprecated_member_use
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\main.dart:195:9 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\chat_screen.dart:235:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\chat_screen.dart:280:56 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\chat_screen.dart:348:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\profile_screen.dart:70:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings_screen.dart:83:44 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings_screen.dart:129:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\splash_screen.dart:28:18 - use_build_context_synchronously
+

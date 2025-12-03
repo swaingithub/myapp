@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
+import 'friend_requests_screen.dart';
+import '../widgets/display_image.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -66,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (compressedFile == null) throw Exception('Image compression failed');
 
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = authProvider.user;
 
@@ -199,10 +202,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         backgroundColor: Theme.of(context)
                             .colorScheme
                             .primary
-                            .withOpacity(0.1),
-                        backgroundImage: user.photoURL != null
-                            ? NetworkImage(user.photoURL!)
-                            : null,
+                            .withValues(alpha: 0.1),
+                        backgroundImage: getAvatarImage(user.photoURL),
                         child: user.photoURL == null
                             ? Text(
                                 (user.displayName?.isNotEmpty == true
@@ -255,6 +256,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       prefixIcon: Icon(user.email != null
                           ? Icons.email_outlined
                           : Icons.phone_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ListTile(
+                    leading: const Icon(Icons.person_add_outlined),
+                    title: const Text('Friend Requests'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const FriendRequestsScreen()),
+                      );
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
                     ),
                   ),
                   const SizedBox(height: 40),

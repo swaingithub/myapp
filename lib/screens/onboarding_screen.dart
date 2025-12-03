@@ -63,7 +63,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -75,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -104,7 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -132,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context)
                                         .colorScheme
-                                        .onBackground,
+                                        .onSurface,
                                   ),
                             )
                                 .animate()
@@ -176,7 +176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   : Theme.of(context)
                                       .colorScheme
                                       .onSurface
-                                      .withOpacity(0.2),
+                                      .withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),

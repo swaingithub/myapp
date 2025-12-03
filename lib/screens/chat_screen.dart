@@ -19,6 +19,7 @@ import '../services/database_service.dart';
 import '../providers/auth_provider.dart';
 import '../screens/user_profile_screen.dart';
 import '../utils/ui_helpers.dart';
+import '../widgets/display_image.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -37,7 +38,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService databaseService = DatabaseService();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   bool _isSendingImage = false;
@@ -90,19 +91,21 @@ class _ChatScreenState extends State<ChatScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.user!.uid;
       final chatRoomId =
-          _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+        databaseService.getChatRoomId(currentUserId, widget.receiverId);
 
       if (_editingMessageId != null) {
         // Update existing message
         try {
-          await _databaseService.updateMessage(
+          await databaseService.updateMessage(
               chatRoomId, _editingMessageId!, text);
           _cancelEdit();
         } catch (e) {
           debugPrint("Error updating message: $e");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating message: $e')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error updating message: $e')),
+            );
+          }
         }
       } else {
         // Send new message
@@ -116,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
 
         try {
-          await _databaseService.sendMessage(chatRoomId, message);
+          await databaseService.sendMessage(chatRoomId, message);
           _scrollToBottom();
         } catch (e) {
           debugPrint("Error sending message: $e");
@@ -137,7 +140,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.user!.uid;
     final chatRoomId =
-        _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+        databaseService.getChatRoomId(currentUserId, widget.receiverId);
 
     showModalBottomSheet(
       context: context,
@@ -184,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       TextButton(
                         onPressed: () async {
                           Navigator.pop(context);
-                          await _databaseService.deleteMessage(
+                          await databaseService.deleteMessage(
                               chatRoomId, message.id!);
                         },
                         child: const Text('Delete',
@@ -230,10 +233,11 @@ class _ChatScreenState extends State<ChatScreen> {
         throw Exception('Image too large even after compression');
       }
 
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.user!.uid;
       final chatRoomId =
-          _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+        databaseService.getChatRoomId(currentUserId, widget.receiverId);
 
       Message message = Message(
         senderId: currentUserId,
@@ -245,7 +249,7 @@ class _ChatScreenState extends State<ChatScreen> {
         imageData: base64Image,
       );
 
-      await _databaseService.sendMessage(chatRoomId, message);
+      await databaseService.sendMessage(chatRoomId, message);
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
@@ -275,13 +279,14 @@ class _ChatScreenState extends State<ChatScreen> {
           _isSendingImage = true;
         });
 
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        if (!mounted) return;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final currentUserId = authProvider.user!.uid;
         final chatRoomId =
-            _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+          databaseService.getChatRoomId(currentUserId, widget.receiverId);
 
         String fileUrl =
-            await _databaseService.uploadFile(chatRoomId, file, fileName);
+            await databaseService.uploadFile(chatRoomId, file, fileName);
 
         Message message = Message(
           senderId: currentUserId,
@@ -294,7 +299,7 @@ class _ChatScreenState extends State<ChatScreen> {
           fileSize: fileSize,
         );
 
-        await _databaseService.sendMessage(chatRoomId, message);
+        await databaseService.sendMessage(chatRoomId, message);
         _scrollToBottom();
       }
     } catch (e) {
@@ -343,10 +348,11 @@ class _ChatScreenState extends State<ChatScreen> {
       String locationUrl =
           'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
 
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.user!.uid;
       final chatRoomId =
-          _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+        databaseService.getChatRoomId(currentUserId, widget.receiverId);
 
       Message message = Message(
         senderId: currentUserId,
@@ -357,7 +363,7 @@ class _ChatScreenState extends State<ChatScreen> {
         isViewed: false,
       );
 
-      await _databaseService.sendMessage(chatRoomId, message);
+      await databaseService.sendMessage(chatRoomId, message);
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
@@ -397,8 +403,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,
-                  child: Image.memory(
-                    base64Decode(message.imageData!),
+                  child: DisplayImage(
+                    path: message.imageData,
                     fit: BoxFit.contain,
                     width: double.infinity,
                     height: double.infinity,
@@ -437,7 +443,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     if (message.id != null) {
-      _databaseService.markMessageAsViewed(chatRoomId, message.id!);
+      databaseService.markMessageAsViewed(chatRoomId, message.id!);
     }
   }
 
@@ -456,7 +462,7 @@ class _ChatScreenState extends State<ChatScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _databaseService.clearChatMessages(chatRoomId);
+              databaseService.clearChatMessages(chatRoomId);
             },
             child: const Text('Clear', style: TextStyle(color: Colors.red)),
           ),
@@ -467,7 +473,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _toggleBlock(bool isBlocked, String currentUserId) {
     if (isBlocked) {
-      _databaseService.unblockUser(currentUserId, widget.receiverId);
+      databaseService.unblockUser(currentUserId, widget.receiverId);
     } else {
       showDialog(
         context: context,
@@ -483,7 +489,7 @@ class _ChatScreenState extends State<ChatScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _databaseService.blockUser(currentUserId, widget.receiverId);
+                databaseService.blockUser(currentUserId, widget.receiverId);
               },
               child: const Text('Block', style: TextStyle(color: Colors.red)),
             ),
@@ -560,12 +566,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final currentUserId = authProvider.user!.uid;
     final chatRoomId =
-        _databaseService.getChatRoomId(currentUserId, widget.receiverId);
+        databaseService.getChatRoomId(currentUserId, widget.receiverId);
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return StreamBuilder<bool>(
-      stream: _databaseService.isUserBlocked(currentUserId, widget.receiverId),
+      stream: databaseService.isUserBlocked(currentUserId, widget.receiverId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -579,7 +585,7 @@ class _ChatScreenState extends State<ChatScreen> {
             backgroundColor: colorScheme.surface,
             foregroundColor: colorScheme.onSurface,
             elevation: 0.5,
-            shadowColor: Colors.black.withOpacity(0.05),
+            shadowColor: Colors.black.withValues(alpha: 0.05),
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new_rounded,
                   color: colorScheme.onSurface),
@@ -587,7 +593,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             titleSpacing: 0,
             title: StreamBuilder<String?>(
-              stream: _databaseService.getContactNicknameStream(
+              stream: databaseService.getContactNicknameStream(
                   currentUserId, widget.receiverId),
               builder: (context, nicknameSnapshot) {
                 final nickname = nicknameSnapshot.data;
@@ -613,7 +619,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         tag: 'avatar_${widget.receiverId}',
                         child: CircleAvatar(
                           radius: 20,
-                          backgroundColor: colorScheme.primary.withOpacity(0.1),
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                           child: Text(
                             displayName.isNotEmpty
                                 ? displayName[0].toUpperCase()
@@ -638,7 +644,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   color: colorScheme.onSurface),
                             ),
                             StreamBuilder<UserModel?>(
-                              stream: _databaseService
+                              stream: databaseService
                                   .getUserStream(authProvider.user!.uid),
                               builder: (context, currentUserSnapshot) {
                                 final currentUser = currentUserSnapshot.data;
@@ -650,7 +656,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 }
 
                                 return StreamBuilder<UserModel?>(
-                                  stream: _databaseService
+                                  stream: databaseService
                                       .getUserStream(widget.receiverId),
                                   builder: (context, snapshot) {
                                     if (!snapshot.hasData) {
@@ -672,7 +678,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         'Last seen ${DateFormat('h:mm a').format(user.lastSeen!)}',
                                         style: TextStyle(
                                             color: colorScheme.onSurface
-                                                .withOpacity(0.6),
+                                                .withValues(alpha: 0.6),
                                             fontSize: 12),
                                       );
                                     }
@@ -696,7 +702,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceVariant.withOpacity(0.3),
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: TextField(
@@ -707,13 +713,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         decoration: InputDecoration(
                           hintText: 'Search in chat...',
                           hintStyle: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.5)),
+                              color: colorScheme.onSurface.withValues(alpha: 0.5)),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
                           suffixIcon: IconButton(
                             icon: Icon(Icons.close,
-                                color: colorScheme.onSurface.withOpacity(0.6)),
+                                color: colorScheme.onSurface.withValues(alpha: 0.6)),
                             onPressed: () {
                               setState(() {
                                 _isSearching = false;
@@ -799,7 +805,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Expanded(
                       child: StreamBuilder<List<Message>>(
-                        stream: _databaseService.getMessages(chatRoomId),
+                        stream: databaseService.getMessages(chatRoomId),
                         builder: (context, snapshot) {
                           if (snapshot.hasError) {
                             return Center(
@@ -857,7 +863,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   message.type != 'view_once') {
                                 WidgetsBinding.instance
                                     .addPostFrameCallback((_) {
-                                  _databaseService.markMessageAsViewed(
+                                  databaseService.markMessageAsViewed(
                                       chatRoomId, message.id!);
                                 });
                               }
@@ -880,7 +886,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             .format(message.timestamp.toDate()),
                                         style: TextStyle(
                                           color: colorScheme.onSurface
-                                              .withOpacity(0.4),
+                                              .withValues(alpha: 0.4),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -947,10 +953,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Container(
                           padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                           decoration: BoxDecoration(
-                            color: colorScheme.surface.withOpacity(0.8),
+                            color: colorScheme.surface.withValues(alpha: 0.8),
                             border: Border(
                               top: BorderSide(
-                                color: colorScheme.onSurface.withOpacity(0.05),
+                                color: colorScheme.onSurface.withValues(alpha: 0.05),
                               ),
                             ),
                           ),
@@ -984,7 +990,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             const EdgeInsets.only(bottom: 8),
                                         decoration: BoxDecoration(
                                           color: colorScheme.primary
-                                              .withOpacity(0.1),
+                                              .withValues(alpha: 0.1),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
@@ -1023,7 +1029,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 BorderRadius.circular(20),
                                             border: Border.all(
                                               color: colorScheme.onSurface
-                                                  .withOpacity(0.1),
+                                                  .withValues(alpha: 0.1),
                                             ),
                                           ),
                                           child: Row(
@@ -1048,7 +1054,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   BorderRadius.circular(20),
                                               border: Border.all(
                                                 color: colorScheme.onSurface
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                               ),
                                             ),
                                             child: TextField(
@@ -1060,7 +1066,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 hintText: 'Type a message...',
                                                 hintStyle: TextStyle(
                                                   color: colorScheme.onSurface
-                                                      .withOpacity(0.4),
+                                                      .withValues(alpha: 0.4),
                                                   fontSize: 14,
                                                 ),
                                                 border: InputBorder.none,
@@ -1075,7 +1081,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           .emoji_emotions_outlined,
                                                       color: colorScheme
                                                           .onSurface
-                                                          .withOpacity(0.4)),
+                                                          .withValues(alpha: 0.4)),
                                                   onPressed: () {
                                                     showUnderConstructionDialog(
                                                         context,
@@ -1103,7 +1109,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             boxShadow: [
                                               BoxShadow(
                                                 color: colorScheme.primary
-                                                    .withOpacity(0.3),
+                                                    .withValues(alpha: 0.3),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 4),
                                               ),
@@ -1185,7 +1191,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -1220,8 +1226,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     DateFormat('h:mm a').format(message.timestamp.toDate()),
                     style: TextStyle(
                       color: isMe
-                          ? Colors.white.withOpacity(0.7)
-                          : colorScheme.onSurface.withOpacity(0.5),
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : colorScheme.onSurface.withValues(alpha: 0.5),
                       fontSize: 9, // Reduced font size
                       fontWeight: FontWeight.w500,
                     ),
@@ -1242,7 +1248,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       size: 14, // Reduced icon size
                       color: message.isViewed
                           ? Colors.white
-                          : Colors.white.withOpacity(0.7),
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ],
                 ],
@@ -1266,7 +1272,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onTap: canView
           ? () => _showViewOnceImage(
               message,
-              _databaseService.getChatRoomId(
+              databaseService.getChatRoomId(
                   message.senderId, message.receiverId))
           : null,
       child: Container(
@@ -1278,10 +1284,10 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: isMe
-                    ? Colors.white.withOpacity(0.2)
+                    ? Colors.white.withValues(alpha: 0.2)
                     : (isExpired
-                        ? Colors.grey.withOpacity(0.1)
-                        : colorScheme.primary.withOpacity(0.1)),
+                        ? Colors.grey.withValues(alpha: 0.1)
+                        : colorScheme.primary.withValues(alpha: 0.1)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1308,8 +1314,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   isExpired ? 'Photo' : 'Tap to view',
                   style: TextStyle(
                     color: isMe
-                        ? Colors.white.withOpacity(0.7)
-                        : colorScheme.onSurface.withOpacity(0.6),
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
@@ -1337,8 +1343,8 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               body: Center(
                 child: InteractiveViewer(
-                  child: Image.memory(
-                    base64Decode(message.imageData!),
+                  child: DisplayImage(
+                    path: message.imageData,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -1385,8 +1391,8 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isMe
-              ? Colors.white.withOpacity(0.2)
-              : colorScheme.surfaceVariant.withOpacity(0.5),
+              ? Colors.white.withValues(alpha: 0.2)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -1414,8 +1420,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       '${(message.fileSize! / 1024).toStringAsFixed(1)} KB',
                       style: TextStyle(
                         color: isMe
-                            ? Colors.white.withOpacity(0.7)
-                            : colorScheme.onSurface.withOpacity(0.6),
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : colorScheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 10,
                       ),
                     ),
@@ -1442,8 +1448,8 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isMe
-              ? Colors.white.withOpacity(0.2)
-              : colorScheme.surfaceVariant.withOpacity(0.5),
+              ? Colors.white.withValues(alpha: 0.2)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -1466,8 +1472,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   'Tap to view on map',
                   style: TextStyle(
                     color: isMe
-                        ? Colors.white.withOpacity(0.7)
-                        : colorScheme.onSurface.withOpacity(0.6),
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 10,
                   ),
                 ),
