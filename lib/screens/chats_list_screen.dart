@@ -211,8 +211,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
+                                    return const SizedBox.shrink();
                                   }
                                   final users = snapshot.data ?? [];
                                   final filteredUsers = users
@@ -251,8 +250,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                                   }
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
+                                    return const SizedBox.shrink();
                                   }
 
                                   final rooms = snapshot.data ?? [];
