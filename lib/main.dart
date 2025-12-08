@@ -110,21 +110,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     // Define a modern color scheme
-    const Color primaryColor = Color(0xFF6C63FF); // Modern Indigo
-    const Color secondaryColor = Color(0xFF03DAC6); // Teal accent
-    const Color surfaceColor = Colors.white;
-    const Color backgroundColor = Color(0xFFF5F7FA);
+    // Define a modern, advanced color scheme
+    // "Deep Indigo" - a premium, tech-forward palette
+    const Color primarySeed = Color(0xFF4F46E5); // Indigo 600
+    const Color secondarySeed = Color(0xFF0EA5E9); // Sky 500
+    
+    // Light Theme Colors
+    const Color lightBackground = Color(0xFFF3F4F6); // Cool Gray 100
+    const Color lightSurface = Colors.white;
+    
+    // Dark Theme Colors
+    const Color darkBackground = Color(0xFF0F172A); // Slate 900
+    const Color darkSurface = Color(0xFF1E293B); // Slate 800
 
     // Define a common TextTheme with Poppins
     final TextTheme appTextTheme = TextTheme(
       displayLarge: GoogleFonts.poppins(
-          fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+          fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -0.5),
       displayMedium: GoogleFonts.poppins(
-          fontSize: 24, fontWeight: FontWeight.w600, color: Colors.black87),
-      bodyLarge: GoogleFonts.poppins(fontSize: 16, color: Colors.black87),
-      bodyMedium: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+          fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: -0.5),
+      bodyLarge: GoogleFonts.poppins(fontSize: 16, height: 1.5),
+      bodyMedium: GoogleFonts.poppins(fontSize: 14, height: 1.5),
       labelLarge: GoogleFonts.poppins(
-          fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+          fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
     );
 
     // Light Theme
@@ -132,14 +140,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        surface: surfaceColor,
+        seedColor: primarySeed,
+        primary: primarySeed,
+        secondary: secondarySeed,
+        surface: lightSurface,
+        background: lightBackground,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: backgroundColor,
-      textTheme: appTextTheme,
+      scaffoldBackgroundColor: lightBackground,
+      textTheme: appTextTheme.apply(displayColor: Colors.black87, bodyColor: Colors.black87),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -150,14 +159,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primarySeed,
           foregroundColor: Colors.white,
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 2,
+          shadowColor: primarySeed.withOpacity(0.4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          textStyle:
-              GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -169,21 +177,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: primaryColor, width: 1.5),
+          borderSide: const BorderSide(color: primarySeed, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         labelStyle: GoogleFonts.poppins(color: Colors.black54),
         hintStyle: GoogleFonts.poppins(color: Colors.black38),
       ),
       cardTheme: CardThemeData(
         color: Colors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.05),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
     );
@@ -193,15 +201,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        surface: const Color(0xFF1E1E1E),
+        seedColor: primarySeed,
+        primary: primarySeed,
+        secondary: secondarySeed,
+        surface: darkSurface,
+        background: darkBackground,
         brightness: Brightness.dark,
       ),
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      scaffoldBackgroundColor: darkBackground,
       textTheme: appTextTheme.apply(
-        bodyColor: Colors.white,
+        bodyColor: Colors.white.withOpacity(0.87),
         displayColor: Colors.white,
       ),
       appBarTheme: AppBarTheme(
@@ -214,19 +223,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primarySeed,
           foregroundColor: Colors.white,
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          textStyle:
-              GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF2C2C2C),
+        fillColor: const Color(0xFF2C3545), // Slightly lighter than surface
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -237,17 +245,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: primaryColor, width: 1.5),
+          borderSide: const BorderSide(color: primarySeed, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         labelStyle: GoogleFonts.poppins(color: Colors.white70),
         hintStyle: GoogleFonts.poppins(color: Colors.white38),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1E1E1E),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        color: darkSurface,
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
     );

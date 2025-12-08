@@ -118,6 +118,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Account Section
               _buildSectionHeader(context, 'Account'),
               ListTile(
+                leading: const Icon(Icons.alternate_email_rounded),
+                title: const Text('Username'),
+                subtitle: Text(userData.username ?? 'Not set'),
+                trailing: const Icon(Icons.edit_rounded, size: 20),
+                onTap: () => _showUsernameDialog(context, userData.username),
+              ),
+              ListTile(
                 leading: const Icon(Icons.logout_rounded, color: Colors.red),
                 title:
                     const Text('Log Out', style: TextStyle(color: Colors.red)),
@@ -145,6 +152,116 @@ class _SettingsScreenState extends State<SettingsScreen> {
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
+      ),
+    );
+  }
+
+  Future<void> _showUsernameDialog(
+      BuildContext context, String? currentUsername) async {
+    final TextEditingController controller =
+        TextEditingController(text: currentUsername);
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+    String? errorText;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Set Username'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'You can choose a username so people can contact you without your phone number.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      labelText: 'Username',
+                      prefixText: '@',
+                      errorText: errorText,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a username';
+                      }
+                      if (value.length < 4) {
+                        return 'Username must be at least 4 characters';
+                      }
+                      if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                        return 'Only letters, numbers and underscores';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        if (formKey.currentState!.validate()) {
+                          final newUsername = controller.text.trim();
+                          if (newUsername == currentUsername) {
+                            Navigator.pop(dialogContext);
+                            return;
+                          }
+
+                          setState(() {
+                            isLoading = true;
+                            errorText = null;
+                          });
+
+                          try {
+                            final userId = Provider.of<AuthProvider>(context,
+                                    listen: false)
+                                .user!
+                                .uid;
+                            await databaseService.updateUsername(
+                                userId, newUsername);
+                            if (context.mounted) {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Username updated!')),
+                              );
+                            }
+                          } catch (e) {
+                            setState(() {
+                              errorText =
+                                  e.toString().replaceAll('Exception: ', '');
+                              isLoading = false;
+                            });
+                          }
+                        }
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -13,6 +13,8 @@ class Message {
   final int? fileSize;
   final String? imageData;
   final bool isSynced;
+  final Timestamp? unlockAt;
+  final String? effect; // e.g., 'invisible_ink'
 
   Message({
     this.id,
@@ -27,6 +29,8 @@ class Message {
     this.isSynced = true,
     this.fileName,
     this.fileSize,
+    this.unlockAt,
+    this.effect,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +45,8 @@ class Message {
       'imageData': imageData,
       'fileName': fileName,
       'fileSize': fileSize,
+      'unlockAt': unlockAt,
+      'effect': effect,
     };
   }
 
@@ -57,6 +63,8 @@ class Message {
       imageData: map['imageData'],
       fileName: map['fileName'],
       fileSize: map['fileSize'],
+      unlockAt: map['unlockAt'],
+      effect: map['effect'],
     );
   }
 
@@ -73,6 +81,8 @@ class Message {
     bool? isSynced,
     String? fileName,
     int? fileSize,
+    Timestamp? unlockAt,
+    String? effect,
   }) {
     return Message(
       id: id ?? this.id,
@@ -87,6 +97,8 @@ class Message {
       isSynced: isSynced ?? this.isSynced,
       fileName: fileName ?? this.fileName,
       fileSize: fileSize ?? this.fileSize,
+      unlockAt: unlockAt ?? this.unlockAt,
+      effect: effect ?? this.effect,
     );
   }
 }

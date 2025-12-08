@@ -32,7 +32,7 @@ class DatabaseService {
     await saveUser(user);
   }
 
-  // Search users by phone number or email
+  // Search users by phone number, email, or username
   Future<List<UserModel>> searchUsers(String query) async {
     if (query.isEmpty) return [];
 
@@ -50,17 +50,49 @@ class DatabaseService {
         .where('email', isLessThan: '${query}z')
         .get();
 
+    // Search by username
+    final usernameQuery = await _firestore
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: query)
+        .where('username', isLessThan: '${query}z')
+        .get();
+
     final users = <UserModel>[];
     for (var doc in phoneQuery.docs) {
       users.add(UserModel.fromMap(doc.data()));
     }
     for (var doc in emailQuery.docs) {
-      // Avoid duplicates
+      if (!users.any((u) => u.uid == doc.id)) {
+        users.add(UserModel.fromMap(doc.data()));
+      }
+    }
+    for (var doc in usernameQuery.docs) {
       if (!users.any((u) => u.uid == doc.id)) {
         users.add(UserModel.fromMap(doc.data()));
       }
     }
     return users;
+  }
+
+  // Check if username is available
+  Future<bool> isUsernameAvailable(String username) async {
+    final query = await _firestore
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .get();
+    return query.docs.isEmpty;
+  }
+
+  // Update Username
+  Future<void> updateUsername(String uid, String username) async {
+    // Check uniqueness again just in case
+    final isAvailable = await isUsernameAvailable(username);
+    if (!isAvailable) {
+      throw Exception('Username already taken');
+    }
+    await _firestore.collection('users').doc(uid).update({
+      'username': username,
+    });
   }
 
   // Get all users (deprecated for main list, use getChatRooms instead)
@@ -97,6 +129,10 @@ class DatabaseService {
                   : (data['lastMessageTime'] as dynamic).toDate())
               : null,
           'otherUserId': otherUserId,
+          'lastMessageSenderId': data['lastMessageSenderId'],
+          'lastMessageIsViewed': data['lastMessageIsViewed'] ?? false,
+          'lastMessageIsDelivered': data['lastMessageIsDelivered'] ?? false,
+          'isSynced': !doc.metadata.hasPendingWrites,
           'unreadCount': 0,
         };
 
@@ -185,6 +221,9 @@ class DatabaseService {
     await _firestore.collection('chat_rooms').doc(chatRoomId).set({
       'lastMessage': lastMsg,
       'lastMessageTime': message.timestamp,
+      'lastMessageSenderId': message.senderId,
+      'lastMessageIsViewed': false,
+      'lastMessageIsDelivered': false,
       'users': [message.senderId, message.receiverId],
     }, SetOptions(merge: true));
   }
@@ -195,7 +234,7 @@ class DatabaseService {
         .doc(chatRoomId)
         .collection('messages')
         .orderBy('timestamp', descending: false)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();

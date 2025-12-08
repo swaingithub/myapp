@@ -3,6 +3,7 @@ class UserModel {
   final String? email;
   final String? phoneNumber;
   final String? displayName;
+  final String? username;
   final String? photoUrl;
   final bool isOnline;
   final DateTime? lastSeen;
@@ -13,6 +14,7 @@ class UserModel {
     this.email,
     this.phoneNumber,
     this.displayName,
+    this.username,
     this.photoUrl,
     this.isOnline = false,
     this.lastSeen,
@@ -25,6 +27,7 @@ class UserModel {
       'email': email,
       'phoneNumber': phoneNumber,
       'displayName': displayName,
+      'username': username,
       'photoUrl': photoUrl,
       'isOnline': isOnline,
       'lastSeen': lastSeen?.millisecondsSinceEpoch,
@@ -38,6 +41,7 @@ class UserModel {
       email: map['email'],
       phoneNumber: map['phoneNumber'],
       displayName: map['displayName'],
+      username: map['username'],
       photoUrl: map['photoUrl'],
       isOnline: map['isOnline'] ?? false,
       lastSeen: map['lastSeen'] != null
@@ -54,6 +58,7 @@ class UserModel {
     String? email,
     String? phoneNumber,
     String? displayName,
+    String? username,
     String? photoUrl,
     bool? isOnline,
     DateTime? lastSeen,
@@ -64,6 +69,7 @@ class UserModel {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       displayName: displayName ?? this.displayName,
+      username: username ?? this.username,
       photoUrl: photoUrl ?? this.photoUrl,
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,

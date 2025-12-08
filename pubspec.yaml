@@ -55,6 +55,7 @@ dependencies:
   url_launcher: ^6.3.2
   geolocator: ^14.0.2
   emoji_picker_flutter: ^4.4.0
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
+
+class UIHelpers {
+  static String formatLastSeen(DateTime lastSeen) {
+    final now = DateTime.now();
+    final localLastSeen = lastSeen.toLocal();
+    final isToday = now.year == localLastSeen.year &&
+        now.month == localLastSeen.month &&
+        now.day == localLastSeen.day;
+
+    final yesterday = now.subtract(const Duration(days: 1));
+    final isYesterday = yesterday.year == localLastSeen.year &&
+        yesterday.month == localLastSeen.month &&
+        yesterday.day == localLastSeen.day;
+
+    final timeString = DateFormat('h:mm a').format(localLastSeen);
+
+    if (isToday) {
+      return 'today at $timeString';
+    } else if (isYesterday) {
+      return 'yesterday at $timeString';
+    } else {
+      return 'on ${DateFormat('MMM d').format(localLastSeen)} at $timeString';
+    }
+  }
+}
 
 void showUnderConstructionDialog(BuildContext context, String featureName) {
   showDialog(
